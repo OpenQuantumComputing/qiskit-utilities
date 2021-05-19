@@ -47,6 +47,8 @@ def start_or_retrieve_job(filename, backend, circuit=None, options=None):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    print("job name:"+directory+'/'+filename)
+
     if not(forcererun) and os.path.isfile(directory+'/'+filename):
         #read job id from file and retrieve the job
         with open(directory+'/'+filename, 'r') as f:
@@ -295,4 +297,129 @@ def convert_to_binarystring(results):
         list.append(dict)
     return list
 
+
+def Cn_U3_0theta0(qc, control_indices, target_index, theta):
+    """
+    Ref: https://arxiv.org/abs/0708.3274
+
+    """
+    n=len(control_indices)
+    if n == 0:
+        qc.rz(theta, control_indices)
+    elif n == 1:
+        qc.cu3(0, theta, 0, control_indices, target_index)
+    elif n == 2:
+        qc.cu3(0, theta/ 2, 0, control_indices[1], target_index)  # V gate, V^2 = U
+        qc.cx(control_indices[0], control_indices[1])
+        qc.cu3(0, -theta/ 2, 0, control_indices[1], target_index)  # V dagger gate
+        qc.cx(control_indices[0], control_indices[1])
+        qc.cu3(0, theta/ 2, 0, control_indices[0], target_index) #V gate
+    else:
+        raise Exception("C^nU_3(0,theta,0) not yet implemented for n="+str(n)+".")
+
+def CGp(qc, control_index, target_index, p):
+    """
+    Ref: https://onlinelibrary.wiley.com/doi/pdf/10.1002/qute.201900015
+
+    """
+    thetadash = np.arcsin(np.sqrt(p))
+    qc.u(thetadash, 0, 0, target_index)
+    qc.cx(control_index, target_index)
+    qc.u(-thetadash, 0, 0, target_index)
+
+def Wn(qc, indices):
+    """
+    Ref: https://onlinelibrary.wiley.com/doi/pdf/10.1002/qute.201900015
+
+    """
+    n=len(indices)
+    if n<2 or n>8:
+        raise Exception("Wn not defined for n="+str(n)+".")
+
+    qc.x(indices[0])
+
+    if n==2:
+        qc.h(indices[1])
+        qc.cx(indices[1], indices[0])
+    elif n==3:
+        CGp(qc, indices[0], indices[1], 1/3)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[1], indices[2], 1/2)
+        qc.cx(indices[2], indices[1])
+    elif n==4:
+        CGp(qc, indices[0], indices[1], 1/4)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[1], indices[2], 1/3)
+        qc.cx(indices[2], indices[1])
+        #
+        CGp(qc, indices[2], indices[3], 1/2)
+        qc.cx(indices[3], indices[2])
+    elif n==5:
+        CGp(qc, indices[0], indices[1], 2/5)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[0], indices[2], 1/2)
+        qc.cx(indices[2], indices[0])
+        #
+        CGp(qc, indices[1], indices[3], 1/3)
+        qc.cx(indices[3], indices[1])
+        #
+        CGp(qc, indices[3], indices[4], 1/2)
+        qc.cx(indices[4], indices[3])
+    elif n==6:
+        CGp(qc, indices[0], indices[1], 3/6)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[0], indices[2], 1/3)
+        qc.cx(indices[2], indices[0])
+        #
+        CGp(qc, indices[1], indices[3], 2/3)
+        qc.cx(indices[3], indices[1])
+        #
+        CGp(qc, indices[2], indices[4], 1/2)
+        qc.cx(indices[4], indices[2])
+        #
+        CGp(qc, indices[1], indices[5], 1/2)
+        qc.cx(indices[5], indices[1])
+    elif n==7:
+        CGp(qc, indices[0], indices[1], 3/7)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[0], indices[2], 1/3)
+        qc.cx(indices[2], indices[0])
+        #
+        CGp(qc, indices[1], indices[3], 1/2)
+        qc.cx(indices[3], indices[1])
+        #
+        CGp(qc, indices[2], indices[4], 1/2)
+        qc.cx(indices[4], indices[2])
+        #
+        CGp(qc, indices[1], indices[5], 1/2)
+        qc.cx(indices[5], indices[1])
+        #
+        CGp(qc, indices[3], indices[6], 1/2)
+        qc.cx(indices[6], indices[3])
+    elif n==8:
+        CGp(qc, indices[0], indices[1], 1/2)
+        qc.cx(indices[1], indices[0])
+        #
+        CGp(qc, indices[0], indices[2], 1/2)
+        qc.cx(indices[2], indices[0])
+        #
+        CGp(qc, indices[1], indices[3], 1/2)
+        qc.cx(indices[3], indices[1])
+        #
+        CGp(qc, indices[0], indices[4], 1/2)
+        qc.cx(indices[4], indices[0])
+        #
+        CGp(qc, indices[2], indices[5], 1/2)
+        qc.cx(indices[5], indices[2])
+        #
+        CGp(qc, indices[1], indices[6], 1/2)
+        qc.cx(indices[6], indices[1])
+        #
+        CGp(qc, indices[3], indices[7], 1/2)
+        qc.cx(indices[7], indices[3])
 
